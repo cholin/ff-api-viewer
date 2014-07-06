@@ -7,7 +7,7 @@
     <h1>Freifunk Communities</h1>
 
     <div class="centered">
-      <iframe width="700px" height="350px" src="http://weimarnetz.de/ffmap/map.html"></iframe>
+      <iframe width="700px" height="350px" src="http://freifunk.net/map/map.html"></iframe>
     </div>
 
     <table class="sortable">
@@ -18,6 +18,7 @@
         <th>Routing</th>
         <th>Knoten</th>
         <th>VPN</th>
+        <th>Version</th>
       </tr>
     {% for name, data in communities | dictsort %}
       <tr>
@@ -43,7 +44,16 @@
 
         <td>
           {% if 'techDetails' in data and 'routing' in data['techDetails']%}
-            {{ data['techDetails']['routing'] | upper }}
+					{% if data['techDetails']['routing'] is list %}
+				      {%- for e in data['techDetails']['routing'] %}
+							{{  e }}
+							{% if not loop.last %}
+							    ,
+							{% endif %}
+						 {%- endfor %}
+					{% else %}
+							{{ data['techDetails']['routing'] | upper }}
+						{%- endif %}
           {% endif %}
         </td>
 
@@ -56,6 +66,11 @@
         <td>
           {% if 'techDetails' in data and 'vpn' in data['techDetails']%}
             {{ data['techDetails']['vpn'] }}
+          {% endif %}
+        </td>
+        <td>
+          {% if 'api' in data %}
+            {{ data['api'] }}
           {% endif %}
         </td>
       </tr>

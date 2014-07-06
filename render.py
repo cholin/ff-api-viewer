@@ -7,6 +7,7 @@ import sys
 import urllib2
 
 from jinja2 import Environment, FileSystemLoader
+from jinja2.utils import urlize
 from datetime import datetime
 
 def is_dict(value):
@@ -52,13 +53,10 @@ def render_community(template_path, data):
   latlon = (float(data['location']['lat']),float(data['location']['lon']))
 
   template = env.get_template(template_path)
-  html = template.render(
-            community=community,
-            url=url,
-            latlon=latlon,
-            bbox=gen_bbox(latlon),
-            now=datetime.now().ctime(),
-            data=data)
+
+  content = walk(data)
+
+  html = template.render(community=community, url=url, latlon=latlon, bbox=gen_bbox(latlon), now=datetime.now().ctime(), data=content)
 
   return html.encode('utf-8')
 
@@ -72,6 +70,24 @@ def render_index(template_path, communities):
 
   return html.encode('utf-8')
 
+def walk(node):
+	html="<dl>"
+	for key, item in node.items():
+		html+="<dt>" + key.capitalize() + "</dt>"
+		if is_dict(item):
+			html+="<dd>" + walk(item) + "</dd>"
+		elif is_list(item):
+			for element in item:
+				if is_dict(element):
+					html+="<dd>" + walk(element) + "</dd>"
+				else:
+					html+="<dd>" + urlize(element) + "</dd>"
+		else:
+			if type(item) is int or type(item) is float:
+				item = str(item)
+			html+="<dd>" + urlize(item) + "</dd>"
+	return html + "</dl>"
+
 
 if __name__ == "__main__":
   build_dir = 'build'
@@ -84,7 +100,7 @@ if __name__ == "__main__":
 
   # communities
   try:
-    url = 'http://weimarnetz.de/ffmap/ffSummarizedDir.json'
+    url = 'http://freifunk.net/map/ffSummarizedDir.json'
     req = urllib2.urlopen(url)
     communities = json.load(req)
   except urllib2.HTTPError:
@@ -99,15 +115,15 @@ if __name__ == "__main__":
 
   print("Rendering communities")
   for name, data in communities.items():
-    print("\t* %s...\t" % name),
-    path = os.path.join(build_dir, '%s.html' % name)
-    try:
-      with open(path,'w') as f:
-        f.write(render_community('community.html', data.copy()))
-        rendered[name] = data
-        print("ok")
-    except:
-        print("error")
+		print("\t* %s...\t" % name)
+		path = os.path.join(build_dir, '%s.html' % name)
+		try:
+			with open(path,'w') as f:
+				f.write(render_community('community.html', data.copy()))
+				rendered[name] = data
+				print("ok")
+		except Exception as e:
+			print("error: ", str(e), data)
 
   # index
   print("\nRendering index page...\t"),
